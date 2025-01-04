@@ -1,0 +1,29 @@
+services:
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor
+    ports:
+      - 8081:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev:/dev
+    privileged: true
+    devices:
+      - /dev/kmsg
+    deploy:
+      mode: global
+      labels:
+        - traefik.enable=true
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    ports:
+      - 9100:9100
+    command:
+      - "--path.rootfs=/host"
+    network_mode: host
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - "/:/host:ro,rslave"

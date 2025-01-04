@@ -1,0 +1,104 @@
+services:
+  app:
+    image: app
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      target: prod
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.app.rule=Host(`s2.orb.local`)
+        - traefik.http.services.app.loadbalancer.server.port=80
+    networks:
+      - proxy
+  api:
+    image: api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      target: prod
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.api.rule=Host(`api.s2.orb.local`)
+        - traefik.http.services.api.loadbalancer.server.port=80
+    env_file:
+      - ./api/.env
+    networks:
+      - proxy
+      - back
+      - grafana
+    volumes:
+      - /Users/pierre/projets/obs/api:/www/app
+    depends_on:
+      - db
+  db:
+    image: mariadb
+    environment:
+      - MARIADB_ROOT_PASSWORD=hello
+    volumes:
+      - db:/var/lib/mysql
+    networks:
+      - back
+    ports:
+      - 3306:3306
+    deploy:
+      placement:
+        constraints:
+          - node.hostname==s2
+  redis:
+    image: redis/redis-stack:latest
+    ports:
+      - 8001:8001
+      - 6379:6379
+    networks:
+      - back
+      - grafana
+    volumes:
+      - redis:/data redis/redis-stack:latest
+  mailpit:
+    image: axllent/mailpit
+    volumes:
+      - ./mailpit.db:/data/mailpit.db
+    networks:
+      - back
+      - proxy
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_DATABASE: /data/mailpit.db
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1 
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.mail.rule=Host(`mail.s2.orb.local`)
+        - traefik.http.services.mail.loadbalancer.server.port=8025
+  worker:
+    image: api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      target: prod
+    command: php artisan queue:work
+    env_file:
+      - ./api/.env
+    networks:
+      - back
+      - grafana
+    volumes:
+      - /Users/pierre/projets/obs/api:/www/app
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  db:
+  redis:
+networks:
+  proxy:
+    external: true
+  back:
+    external: true
+  grafana:
+    external: true

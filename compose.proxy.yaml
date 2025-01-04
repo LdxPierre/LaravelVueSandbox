@@ -1,0 +1,36 @@
+services:
+  traefik:
+    image: traefik
+    command:
+      - --providers.swarm=true
+      - --providers.swarm.exposedbydefault=false
+      - --providers.swarm.network=proxy
+      - --api.insecure=true
+      - --api.dashboard=true
+      - --log.filePath=/var/log/traefik.log
+      - --log.level=WARN
+      - --log.maxbackups=5
+      - --log.compress=true
+      - --accesslog=true
+      - --accesslog.bufferingsize=100
+      - --metrics.prometheus=true
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080
+    deploy:
+      placement:
+        constraints:
+          - node.hostname==s2
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.traefik.rule=Host(`traefik.s2.orb.local`)
+        - traefik.http.services.traefik.loadbalancer.server.port=8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

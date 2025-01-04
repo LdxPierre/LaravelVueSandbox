@@ -1,0 +1,56 @@
+services:
+  grafana:
+    image: grafana/grafana-enterprise
+    volumes:
+      - grafana_db:/var/lib/grafana
+    networks:
+      - proxy
+      - grafana
+    deploy:
+      placement:
+        constraints:
+          - node.hostname==s2
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.grafana.rule=Host(`grafana.s2.orb.local`)
+        - traefik.http.services.grafana.loadbalancer.server.port=3000
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy
+      - grafana
+    extra_hosts:
+      - host.docker.internal=host-gateway
+    deploy:
+      placement:
+        constraints:
+          - node.hostname==s2
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.prometheus.rule=Host(`prometheus.s2.orb.local`)
+        - traefik.http.services.prometheus.loadbalancer.server.port=9090
+  loki:
+    image: grafana/loki:2.9.2
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - proxy
+      - grafana
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.loki.rule=Host(`loki.s2.orb.local`)
+        - traefik.http.routers.loki.loadbalancer.server.port=3100
+
+volumes:
+  grafana_db:
+  prometheus_data:
+
+networks:
+  proxy:
+    external: true
+  grafana:
+    external: true

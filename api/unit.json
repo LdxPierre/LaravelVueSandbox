@@ -1,0 +1,26 @@
+{
+    "listeners": {
+        "*:80": {
+            "pass": "routes"
+        }
+    },
+    "routes": [
+        {
+            "action": {
+                "share": "/www/app/public$uri",
+                "fallback": {
+                    "pass": "applications/laravel"
+                }
+            }
+        }
+    ],
+    "applications": {
+        "laravel": {
+            "type": "php",
+            "root": "/www/app/public",
+            "script": "index.php",
+            "stdout": "/dev/stdout",
+            "stderr": "/dev/stderr"
+        }
+    }
+}

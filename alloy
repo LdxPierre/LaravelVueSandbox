@@ -1,0 +1,73 @@
+loki.write "default" {
+	endpoint {
+		url = "http://loki:3100/loki/api/v1/push"
+	}
+}
+
+loki.source.journal "read"  {
+  forward_to    = [loki.write.default.receiver]
+  relabel_rules = loki.relabel.journal.rules
+  path          = "/var/log/journal"
+  labels        = {source = "journal"}
+}
+
+loki.relabel "journal" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__hostname"]
+    target_label  = "hostname"
+  }
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+}
+
+discovery.docker "docker" {
+	host             = "unix:///var/run/docker.sock"
+	refresh_interval = "5s"
+}
+
+discovery.relabel "docker" {
+  targets = discovery.docker.docker.targets
+
+  rule {
+    source_labels   = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label    = "stack"
+  }
+
+  rule {
+    source_labels   = ["__meta_docker_container_name"]
+    regex           = "/([a-zA-Z\\-_]*[a-zA-Z]+)[\\-0-9]*"
+    target_label    = "container"
+  }
+
+  rule {
+    source_labels   = ["__meta_docker_container_label_com_docker_stack_namespace"]
+    target_label    = "stack" 
+  }
+
+  rule {
+    source_labels   = ["__meta_docker_container_label_com_docker_swarm_service_name"]
+    target_label    = "service"
+  }
+  rule {
+    source_labels   = ["__meta_docker_container_label_com_docker_swarm_task_name"]
+    regex           = "(.*)_([a-zA-Z0-9-]*)\\.(\\d*)\\.(.*)"
+    replacement     = "$3"
+    target_label    = "replica"
+  }
+}
+
+loki.source.docker "docker" {
+	host             = "unix:///var/run/docker.sock"
+	targets          = discovery.relabel.docker.output
+  labels           = {source = "docker"}
+	forward_to       = [loki.process.docker.receiver]
+}
+
+loki.process "docker" {
+  forward_to        = [loki.write.default.receiver]
+}
