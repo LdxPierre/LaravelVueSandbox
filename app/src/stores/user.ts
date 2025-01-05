@@ -4,7 +4,7 @@ import { reactive, toRefs } from 'vue'
 
 type State = {
   user: User | null
-  logged: boolean
+  isAuthenticated: boolean
 }
 
 export const useUser = defineStore('user', () => {
@@ -14,7 +14,7 @@ export const useUser = defineStore('user', () => {
 
   const state = reactive<State>({
     user: null,
-    logged: false,
+    isAuthenticated: false,
   })
 
   /**
@@ -22,12 +22,12 @@ export const useUser = defineStore('user', () => {
    */
 
   /**
-   * Set the current logged user
+   * Set the current authenticated user
    * @param user
    */
   function setUser(user: User | null) {
     state.user = user
-    state.logged = user ? true : false
+    state.isAuthenticated = user ? true : false
   }
 
   /**

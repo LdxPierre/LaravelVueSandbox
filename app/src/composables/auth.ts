@@ -1,3 +1,4 @@
+import { useRouter } from 'vue-router'
 import { useFetch } from './fetch'
 import { useUser } from '@/stores/user'
 
@@ -8,6 +9,7 @@ export function useAuth() {
 
   const { send } = useFetch()
   const { setUser } = useUser()
+  const router = useRouter()
 
   /**
    * Methods
@@ -24,6 +26,7 @@ export function useAuth() {
         body: JSON.stringify(credentials),
       })
       setUser(body)
+      router.replace({ name: 'home' })
     } catch (error) {
       console.log(error)
     }
@@ -36,6 +39,7 @@ export function useAuth() {
     try {
       await send('http://localhost:8000/logout', 'post')
       setUser(null)
+      router.replace({ name: 'login' })
     } catch (error) {
       console.log(error)
     }
