@@ -8,7 +8,7 @@ type State<T> = {
 }
 
 export function useFetch<T>(
-  url: string | Ref<string>,
+  url?: string | Ref<string>,
   method: 'get' | 'post' | 'patch' | 'put' | 'delete' = 'get',
   options?: RequestInit,
   immediate: boolean | Ref<boolean> = false,
@@ -43,15 +43,20 @@ export function useFetch<T>(
    * Call fetch
    * @param sendOptions Additionnal options put on top of the composable options
    */
-  async function send(sendOptions?: RequestInit) {
+  async function send(sendUrl?: string, sendMethod = method, sendOptions?: RequestInit) {
     state.data = null
     state.error = null
     state.pending = true
     state.completed = false
 
+    // Error if no path
+    if (typeof sendUrl === 'undefined' && typeof toValue(url) === 'undefined') {
+      throw new Error('URL missing')
+    }
+
     // Default options
     let queryOptions: RequestInit = {
-      method,
+      method: sendMethod,
       credentials: 'include',
       headers: {
         accept: 'application/json',
@@ -73,9 +78,10 @@ export function useFetch<T>(
     }
 
     try {
-      const query = await fetch(toValue(url), queryOptions)
+      const query = await fetch(sendUrl ?? toValue(url)!, queryOptions)
       const body = await query.json()
       state.data = body
+      return body
     } catch (error) {
       state.error = error
     } finally {
