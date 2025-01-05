@@ -1,39 +1,81 @@
-import { computed, reactive, toRefs, toValue, type Ref } from 'vue'
+import { computed, onMounted, reactive, toRefs, toValue, type Ref } from 'vue'
 
 type State<T> = {
-  result: T | null
+  data: T | null
   error: unknown | null
   pending: boolean
   completed: boolean
 }
 
 export function useFetch<T>(
-  path: string | Ref<string>,
-  method?: 'get' | 'post' | 'patch' | 'put' | 'delete',
+  url: string | Ref<string>,
+  method: 'get' | 'post' | 'patch' | 'put' | 'delete' = 'get',
   options?: RequestInit,
+  immediate: boolean | Ref<boolean> = false,
 ) {
+  /**
+   * States
+   */
+
   const state = reactive<State<T>>({
-    result: null,
+    data: null,
     error: null,
     pending: false,
     completed: false,
   })
 
-  const getPath = computed(() => toValue(path))
+  /**
+   * Getters
+   */
 
-  async function getFetch() {
-    state.result = null
+  const xsrfCookie = computed(() =>
+    document.cookie.split(';').find((el) => el.includes('XSRF-TOKEN')),
+  )
+  const xsrfToken = computed(() =>
+    decodeURIComponent(xsrfCookie.value ? xsrfCookie.value.split('=')[1] : ''),
+  )
+
+  /**
+   * Methods
+   */
+
+  /**
+   * Call fetch
+   * @param sendOptions Additionnal options put on top of the composable options
+   */
+  async function send(sendOptions?: RequestInit) {
+    state.data = null
     state.error = null
     state.pending = true
     state.completed = false
 
+    // Default options
+    let queryOptions: RequestInit = {
+      method,
+      credentials: 'include',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+      },
+      ...options,
+      ...sendOptions,
+    }
+
+    // Add XSRF-TOKEN
+    if (xsrfToken.value) {
+      queryOptions = {
+        ...queryOptions,
+        headers: {
+          ...queryOptions.headers,
+          'X-XSRF-TOKEN': xsrfToken.value,
+        },
+      }
+    }
+
     try {
-      const query = await fetch(getPath.value, {
-        method,
-        ...options,
-      })
+      const query = await fetch(toValue(url), queryOptions)
       const body = await query.json()
-      state.result = body
+      state.data = body
     } catch (error) {
       state.error = error
     } finally {
@@ -42,8 +84,22 @@ export function useFetch<T>(
     }
   }
 
+  /**
+   * Lifecycle
+   */
+
+  onMounted(async () => {
+    if (immediate) {
+      await send()
+    }
+  })
+
+  /**
+   * Return
+   */
+
   return {
-    getFetch,
+    send,
     ...toRefs(state),
   }
 }
