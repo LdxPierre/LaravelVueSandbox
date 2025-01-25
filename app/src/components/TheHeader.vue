@@ -8,7 +8,9 @@ const { isAuthenticated } = storeToRefs(userStore)
 </script>
 
 <template>
-  <header class="w-full px-3 py-2 flex gap-3 bg-blue-900 text-blue-300 font-semibold">
+  <header
+    class="text-foreground flex h-12 w-full items-center gap-3 bg-orange-100 px-3 py-2 font-semibold"
+  >
     <RouterLink :to="{ name: 'home' }">Home</RouterLink>
     <HeaderLogout v-if="isAuthenticated" />
     <RouterLink v-else :to="{ name: 'login' }">Login</RouterLink>

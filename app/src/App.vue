@@ -4,9 +4,9 @@ import TheHeader from './components/TheHeader.vue'
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col">
+  <div class="bg-background flex min-h-screen flex-col">
     <TheHeader />
-    <main class="flex-grow">
+    <main class="flex-grow basis-0">
       <RouterView />
     </main>
   </div>
