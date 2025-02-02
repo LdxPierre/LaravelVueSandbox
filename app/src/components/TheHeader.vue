@@ -1,18 +1,28 @@
 <script setup lang="ts">
-import { useUser } from '@/stores/user'
-import { storeToRefs } from 'pinia'
-import HeaderLogout from './HeaderLogout.vue'
+import AppButton from './AppButton.vue'
+import { Bell, Menu, User2 } from 'lucide-vue-next'
+import { useRoute } from 'vue-router'
 
-const userStore = useUser()
-const { isAuthenticated } = storeToRefs(userStore)
+const { name } = useRoute()
 </script>
 
 <template>
   <header
-    class="text-foreground flex h-12 w-full items-center gap-3 bg-orange-100 px-3 py-2 font-semibold"
+    class="flex h-14 w-full items-center justify-between border-b px-2 py-2 font-semibold text-foreground"
   >
-    <RouterLink :to="{ name: 'home' }">Home</RouterLink>
-    <HeaderLogout v-if="isAuthenticated" />
-    <RouterLink v-else :to="{ name: 'login' }">Login</RouterLink>
+    <div class="flex items-center">
+      <AppButton variant="outline" size="icon" class="hover:bg-neutral-200">
+        <Menu class="size-5" />
+      </AppButton>
+      <span class="ml-4">{{ name }}</span>
+    </div>
+    <div class="flex items-center">
+      <AppButton variant="ghost" size="icon" class="hover:bg-neutral-200">
+        <Bell class="size-5" />
+      </AppButton>
+      <AppButton variant="ghost" size="icon" class="hover:bg-neutral-200">
+        <User2 class="size-5" />
+      </AppButton>
+    </div>
   </header>
 </template>
